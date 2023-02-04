@@ -1,62 +1,69 @@
-import pandas_gbq
+from markovBike.manager.manager import Manager
+import argparse
+from google.cloud import bigquery
 
-def database_query(n_samples):
+def database_queries(n_samples):
 
+    sql_stations_query = f"SELECT * FROM bigquery-public-data.new_york.citibike_stations LIMIT {n_samples}"
 
-    sql_stations_query = f"""
-                        select *
-                        from `bigquery-public-data.new_york.citibike_stations`
-                        LIMIT {n_samples}
-                        """
+    sql_trips_query = f"SELECT * FROM bigquery-public-data.new_york.citibike_trips LIMIT {n_samples}"
 
-    sql_trips_query = f"""
-                    SELECT *
-                    FROM `bigquery-public-data.new_york.citibike_trips`
-                    LIMIT {n_samples}
-                    """
+    return dict(stations= sql_stations_query, trips = sql_trips_query)
 
-    return sql_stations_query, sql_trips_query
+def get_stations_data(query, verbose=True):
 
-def get_stations_data(n_samples):
+    if query:
+        client = bigquery.Client()
 
-    sql_stations = database_query(n_samples)[0]
+        dataframe_stations = client.query(query).result().to_dataframe()
 
-    if sql_stations:
+        if verbose:
+            print(
+                f'Bike trips table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}'
+            )
 
-        stations = pandas_gbq.read_gbq(sql_stations)
-
-        print(f'Bike stations table with {n_samples} samples and {len(stations.columns)} columns loaded, columns are: \n\n{stations.dtypes}')
+        return dataframe_stations
 
     else:
-        print('No query found')
+        print('No query')
 
-    return stations
 
-def get_trips_data(n_samples):
+def get_trips_data(query, verbose=True):
 
-    sql_trips = database_query(n_samples)[1]
+    if query:
+        client = bigquery.Client()
 
-    if sql_trips:
+        dataframe_trips = client.query(query).result().to_dataframe()
 
-        trips = pandas_gbq.read_gbq(sql_trips)
+        if verbose:
+            print(
+                f'Bike trips table with shape {dataframe_trips.shape}. Columns are: \n\n{dataframe_trips.dtypes}'
+            )
 
-        print(
-            f'Bike trips table with {n_samples} samples and {len(trips.columns)} columns loaded, columns are: \n\n{trips.dtypes}'
-        )
+        return dataframe_trips
 
     else:
-        print('No query found')
+        print('No query')
 
-    return trips
-
-def preprocess_stations_data():
-    pass
-
-def preprocess_trips_data():
-    pass
 
 def merge_data():
     pass
 
+
 def source_samples():
     pass
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Run a BigQuery query')
+
+    parser.add_argument('--query',
+                        type=str,
+                        help='The query to run',
+                        required=True)
+
+    args = parser.parse_args()
+
+    dataframe_stations = get_stations_data(args.query, verbose=False)
+
+    Manager.print_table(dataframe_stations.values.tolist())
