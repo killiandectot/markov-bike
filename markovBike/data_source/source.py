@@ -21,7 +21,6 @@ def get_stations_data(query, verbose=True):
             print(
                 f'Bike trips table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}'
             )
-
         return dataframe_stations
 
     else:
@@ -29,7 +28,6 @@ def get_stations_data(query, verbose=True):
 
 
 def get_trips_data(query, verbose=True):
-
     if query:
         client = bigquery.Client()
 
@@ -39,7 +37,6 @@ def get_trips_data(query, verbose=True):
             print(
                 f'Bike trips table with shape {dataframe_trips.shape}. Columns are: \n\n{dataframe_trips.dtypes}'
             )
-
         return dataframe_trips
 
     else:
@@ -47,16 +44,13 @@ def get_trips_data(query, verbose=True):
 
 
 def merge_data():
-
     pass
 
 
 def source_samples():
-
     pass
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Run a BigQuery query')
 
     parser.add_argument('--query',
