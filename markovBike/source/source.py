@@ -47,10 +47,12 @@ def get_trips_data(query, verbose=True):
 
 
 def merge_data():
+
     pass
 
 
 def source_samples():
+
     pass
 
 if __name__ == "__main__":
