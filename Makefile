@@ -5,10 +5,10 @@ install_requirements:
 	@pip install -r requirements.txt
 
 check_code:
-	@flake8 scripts/* markov/*.py
+	@flake8 scripts/* markovBike/*.py
 
 black:
-	@black scripts/* markov/*.py
+	@black scripts/* markovBike/*.py
 
 test:
 	@coverage run -m pytest tests/*.py
