@@ -28,6 +28,7 @@ def get_stations_data(query, verbose=True):
 
 
 def get_trips_data(query, verbose=True):
+
     if query:
         client = bigquery.Client()
 
