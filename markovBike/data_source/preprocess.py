@@ -92,6 +92,8 @@ def preprocess_trips_data(df):
     # Fit the pipeline to the training data
     pipeline.fit(df)
 
-    columns = categorical_columns + numerical_columns + ['age', 'starttime_sin', 'starttime_cos']
+    X = pipeline.transform(df)
 
-    return pipeline.transform(df), columns
+    transformed_columns = categorical_columns + numerical_columns + ['age', 'starttime_sin', 'starttime_cos']
+
+    return X, transformed_columns
