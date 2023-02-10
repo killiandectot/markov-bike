@@ -1,5 +1,6 @@
 import folium
 
+
 class Manager():
 
     def __init__(self) -> None:
@@ -33,9 +34,32 @@ class Manager():
 
         # Add markers for each latitude and longitude
         for lat, lng in zip(latitudes, longitudes):
-            folium.Marker(
-                location=[lat, lng],
-            ).add_to(m)
+            folium.Marker(location=[lat, lng], ).add_to(m)
 
         # Display the map
         return m
+
+    @staticmethod
+    def split_dataframe(df, drops=[], verbose= True):
+
+        df.set_index([col for col in df.columns if 'id' in col], inplace=True)
+
+        df.drop(drops, axis=1, inplace=True)
+
+        numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+
+        numerical_features = df.select_dtypes(include=numerics).columns
+
+        categorical_features = df.select_dtypes(include='object').columns
+
+        boolean_features = df.select_dtypes(include='bool').columns
+
+        if verbose:
+
+            print(numerical_features)
+
+            print(categorical_features)
+
+            print(boolean_features)
+
+        return numerical_features, categorical_features, boolean_features

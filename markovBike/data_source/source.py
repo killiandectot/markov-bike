@@ -2,13 +2,15 @@ from markovBike.manager.manager import Manager
 import argparse
 from google.cloud import bigquery
 
+
 def database_queries(n_samples):
 
     sql_stations_query = f"SELECT * FROM bigquery-public-data.new_york.citibike_stations LIMIT {n_samples}"
 
     sql_trips_query = f"SELECT * FROM bigquery-public-data.new_york.citibike_trips LIMIT {n_samples}"
 
-    return dict(stations= sql_stations_query, trips = sql_trips_query)
+    return dict(stations=sql_stations_query, trips=sql_trips_query)
+
 
 def get_stations_data(query, verbose=True):
 
@@ -19,7 +21,7 @@ def get_stations_data(query, verbose=True):
 
         if verbose:
             print(
-                f'Bike trips table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}'
+                f'Bike station table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}'
             )
         return dataframe_stations
 
@@ -50,6 +52,7 @@ def merge_data():
 
 def source_samples():
     pass
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a BigQuery query')
