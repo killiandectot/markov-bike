@@ -86,3 +86,6 @@ env.bak/
 venv.bak/
 
 .python-version
+
+# Plots
+notebooks/plots

@@ -8,13 +8,32 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from datetime import datetime
-import math
+from colorama import Fore, Style
 
 
-def preprocess_stations_data(df, drops=[], verbose=True):
+def preprocess_stations_data(dataframe,
+                             index=None,
+                             numerical_features=None,
+                             categorical_features=None,
+                             boolean_features=None,
+                             drops=[],
+                             verbose=True):
 
-    numerical_features, categorical_features, boolean_features = Manager.split_dataframe(
-        df, drops=drops, verbose=verbose)
+    if index:
+        dataframe.set_index(index, inplace=True)
+
+    if drops:
+        dataframe.drop(drops, axis=1, inplace=True)
+
+    if verbose:
+
+        print("\n 📶 Columns " + Fore.CYAN + str(list(dataframe.columns)) + Style.RESET_ALL)
+
+        print("\n 📶 Numericals " + Fore.CYAN + str(list(numerical_features)) + Style.RESET_ALL)
+
+        print("\n 📶 Categoricals " + Fore.CYAN + str(list(categorical_features)) + Style.RESET_ALL)
+
+        print("\n 📶 Booleans " + Fore.CYAN + str(list(boolean_features)) + Style.RESET_ALL)
 
     numeric_transformer = Pipeline(
         steps=[('imputer',
@@ -42,21 +61,21 @@ def preprocess_stations_data(df, drops=[], verbose=True):
 
     pipeline = Pipeline(steps=[('preprocessor', preprocessor)])
 
-    X = pipeline.fit_transform(df)
+    X = pipeline.fit_transform(dataframe)
 
     categorical_onehot_features = preprocessor.named_transformers_[
         'cat'].named_steps['onehot'].get_feature_names_out(categorical_features)
 
-    print(categorical_onehot_features)
+    # print(categorical_onehot_features)
 
     boolean_onehot_features = preprocessor.named_transformers_[
         'bool'].named_steps['onehot'].get_feature_names_out(boolean_features)
 
-    print(boolean_onehot_features)
+    # print(boolean_onehot_features)
 
     transformed_columns = list(numerical_features) + list(categorical_onehot_features) + list(boolean_onehot_features)
 
-    print(transformed_columns)
+    #print(transformed_columns)
 
     return X, transformed_columns
 
@@ -77,7 +96,8 @@ class CustomFeaturesAdder(BaseEstimator, TransformerMixin):
                               "start_station_latitude",
                               "start_station_longitude",
                               "end_station_latitude", "end_station_longitude",
-                              "bikeid", "usertype", "birth_year", "gender"
+                              "bikeid", "usertype", "birth_year", "gender",
+                              'start_station_id', 'end_station_id'
                           ])
 
         if self.add_age:
@@ -89,17 +109,40 @@ class CustomFeaturesAdder(BaseEstimator, TransformerMixin):
             df['starttime_cos'] = np.cos(2 * np.pi * df['starttime'].dt.hour /
                                          24)
 
-        print(df.columns)
+        #print(df.columns)
         return df
 
 
-def preprocess_trips_data(df, drops=[], verbose=True):
-    # Define the columns to be encoded, scaled and imputed
-    numerical_features, categorical_features, boolean_features = Manager.split_dataframe(df, drops=drops, verbose=verbose)
+def preprocess_trips_data(dataframe,
+                          index=None,
+                          numerical_features=None,
+                          categorical_features=None,
+                          boolean_features=None,
+                          drops=None,
+                          verbose=True):
+
+    if index:
+        dataframe.set_index(index, inplace=True)
+
+    if drops:
+        dataframe.drop(drops, axis=1, inplace=True)
+
+    if verbose:
+        print("\n 📶 Columns " + Fore.CYAN + str(list(dataframe.columns)) +
+                  Style.RESET_ALL)
+
+        print("\n 📶 Numericals " + Fore.CYAN +
+                  str(list(numerical_features)) + Style.RESET_ALL)
+
+        print("\n 📶 Categoricals " + Fore.CYAN +
+                  str(list(categorical_features)) + Style.RESET_ALL)
+
+        print("\n 📶 Booleans " + Fore.CYAN + str(list(boolean_features)) +
+                  Style.RESET_ALL)
 
     # Create the preprocessing pipelines for the categorical, numerical and boolean columns
     categorical_transformer = Pipeline(
-        steps=[('onehot', OneHotEncoder())])
+        steps=[('onehot', OneHotEncoder(sparse=False, drop='if_binary'))])
     numerical_transformer = Pipeline(
         steps=[('scaler', StandardScaler())])
     custom_features_adder = Pipeline(
@@ -118,9 +161,9 @@ def preprocess_trips_data(df, drops=[], verbose=True):
                ])
 
     # Fit the pipeline to the training data
-    pipeline.fit(df)
+    pipeline.fit(dataframe)
 
-    X = pipeline.transform(df)
+    X = pipeline.transform(dataframe)
 
     categorical_onehot_features = preprocessor.named_transformers_[
         'cat'].named_steps['onehot'].get_feature_names_out(
