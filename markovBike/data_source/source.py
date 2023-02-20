@@ -21,7 +21,7 @@ def get_stations_data(query, verbose=True):
 
         if verbose:
             print(
-                f'Bike station table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}'
+                f'Bike station table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}\n'
             )
         return dataframe_stations
 
@@ -38,7 +38,7 @@ def get_trips_data(query, verbose=True):
 
         if verbose:
             print(
-                f'Bike trips table with shape {dataframe_trips.shape}. Columns are: \n\n{dataframe_trips.dtypes}'
+                f'Bike trips table with shape {dataframe_trips.shape}. Columns are: \n\n{dataframe_trips.dtypes}\n'
             )
         return dataframe_trips
 
