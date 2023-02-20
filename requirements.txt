@@ -9,6 +9,7 @@ numpy
 pandas
 scikit-learn
 pandas-gbq
+seaborn
 
 # tests/linter
 black
