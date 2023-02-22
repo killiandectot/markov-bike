@@ -8,8 +8,10 @@ wheel>=0.29
 numpy
 pandas
 scikit-learn
-pandas-gbq
+#pandas-gbq
 seaborn
+statsmodels
+tensorflow
 
 # tests/linter
 black
