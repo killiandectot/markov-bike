@@ -89,3 +89,4 @@ venv.bak/
 
 # Plots
 notebooks/plots
+notebooks/juani_forecast.ipynb
