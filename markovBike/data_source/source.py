@@ -10,8 +10,10 @@ def database_queries(n_samples):
     :return: A dictionary containing the SQL queries for stations and trips tables.
     """
     sql_stations_query = f"SELECT * FROM bigquery-public-data.new_york.citibike_stations LIMIT {n_samples}"
-    sql_trips_query = f"SELECT * FROM bigquery-public-data.new_york.citibike_trips LIMIT {n_samples}"
-    return {'stations': sql_stations_query, 'trips': sql_trips_query}
+    sql_trips_query = (
+        f"SELECT * FROM bigquery-public-data.new_york.citibike_trips LIMIT {n_samples}"
+    )
+    return {"stations": sql_stations_query, "trips": sql_trips_query}
 
 
 def get_stations_data(query, verbose=True):
@@ -26,11 +28,11 @@ def get_stations_data(query, verbose=True):
         dataframe_stations = client.query(query).to_dataframe()
         if verbose:
             print(
-                f'Bike station table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}\n'
+                f"Bike station table with shape {dataframe_stations.shape}. Columns are: \n\n{dataframe_stations.dtypes}\n"
             )
         return dataframe_stations
     else:
-        print('No query')
+        print("No query")
         return None
 
 
@@ -46,13 +48,12 @@ def get_trips_data(query, verbose=True):
         dataframe_trips = client.query(query).to_dataframe()
         if verbose:
             print(
-                f'Bike trips table with shape {dataframe_trips.shape}. Columns are: \n\n{dataframe_trips.dtypes}\n'
+                f"Bike trips table with shape {dataframe_trips.shape}. Columns are: \n\n{dataframe_trips.dtypes}\n"
             )
         return dataframe_trips
     else:
-        print('No query')
+        print("No query")
         return None
-
 
 
 def merge_data():
@@ -64,12 +65,9 @@ def source_samples():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run a BigQuery query')
+    parser = argparse.ArgumentParser(description="Run a BigQuery query")
 
-    parser.add_argument('--query',
-                        type=str,
-                        help='The query to run',
-                        required=True)
+    parser.add_argument("--query", type=str, help="The query to run", required=True)
 
     args = parser.parse_args()
 

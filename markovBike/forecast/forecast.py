@@ -10,8 +10,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
 
 
-def calculate_daily_rides(dataframe: pd.DataFrame,
-                          date_column: Optional[str] = None) -> pd.DataFrame:
+def calculate_daily_rides(
+    dataframe: pd.DataFrame, date_column: Optional[str] = None
+) -> pd.DataFrame:
     """
     Given a Pandas DataFrame containing bike ride data, calculates the number of rides per day.
 
@@ -25,20 +26,22 @@ def calculate_daily_rides(dataframe: pd.DataFrame,
         which contains the number of rides on that date.
     """
     # Convert the starttime column to a Pandas datetime object
-    dataframe['starttime'] = pd.to_datetime(dataframe['starttime'])
+    dataframe["starttime"] = pd.to_datetime(dataframe["starttime"])
 
     # Add a new column with just the date portion of the starttime column
     if date_column is None:
-        dataframe['date'] = dataframe['starttime'].dt.date
-        date_column = 'date'
+        dataframe["date"] = dataframe["starttime"].dt.date
+        date_column = "date"
     else:
-        dataframe[date_column] = dataframe['starttime'].dt.date
+        dataframe[date_column] = dataframe["starttime"].dt.date
 
     # Count the number of rows (i.e. bike rides) per day
-    daily_rides = dataframe.groupby(date_column).size().reset_index(
-        name='daily_rides')
+    daily_rides = (
+        dataframe.groupby(date_column).size().reset_index(name="daily_n_rides")
+    )
 
     return daily_rides
+
 
 def get_daily_rides_with_weather(df, api_key):
     """
@@ -66,9 +69,9 @@ def get_daily_rides_with_weather(df, api_key):
                 "temperature": data["main"]["temp"],
                 "description": data["weather"][0]["description"],
                 "humidity": data["main"]["humidity"],
-                "wind_speed": data["wind"]["speed"]
+                "wind_speed": data["wind"]["speed"],
             }
-            print(f'Weather for {date} retrieved', end='\r')
+            print(f"Weather for {date} retrieved", end="\r")
 
             # Wait for one second to limit API requests to 60 per minute
             time.sleep(1)
@@ -76,44 +79,39 @@ def get_daily_rides_with_weather(df, api_key):
             return weather_data
         else:
             # If there was an error, print the status code and return None
-            print(f"Error: {response.status_code} - {date}", end='\n')
+            print(f"Error: {response.status_code} - {date}", end="\n")
             return None
 
-
     # Apply the get_weather_data function to each unique date in the DataFrame and create a new column with the results
-    df['weather'] = df['date'].apply(get_weather_data)
+    df["weather"] = df["date"].apply(get_weather_data)
 
     # Extract weather information from the 'weather' column and add it as separate columns in the DataFrame
-    df['temperature'] = df['weather'].apply(lambda x: x['temperature']
-                                            if x is not None else None)
-    df['description'] = df['weather'].apply(lambda x: x['description']
-                                            if x is not None else None)
-    df['humidity'] = df['weather'].apply(lambda x: x['humidity']
-                                         if x is not None else None)
-    df['wind_speed'] = df['weather'].apply(lambda x: x['wind_speed']
-                                           if x is not None else None)
+    df["temperature"] = df["weather"].apply(
+        lambda x: x["temperature"] if x is not None else None
+    )
+    df["description"] = df["weather"].apply(
+        lambda x: x["description"] if x is not None else None
+    )
+    df["humidity"] = df["weather"].apply(
+        lambda x: x["humidity"] if x is not None else None
+    )
+    df["wind_speed"] = df["weather"].apply(
+        lambda x: x["wind_speed"] if x is not None else None
+    )
 
     # Drop the 'weather' column
-    df.drop('weather', axis=1, inplace=True)
+    df.drop("weather", axis=1, inplace=True)
 
     return df
 
 
-
-
-
-
-
-def forecast_number_users(df, test_size=0.2, lstm_units=64, lstm_epochs=50):
-    # Select features and target variable
-    X = df[['temperature', 'description', 'humidity', 'wind_speed']]
-    y = df['daily_rides']
-
+def forecast_number_users(
+    df, X=None, y=None, test_size=0.2, lstm_units=64, lstm_epochs=50
+):
     # Split into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X,
-                                                        y,
-                                                        test_size=test_size,
-                                                        shuffle=False)
+    X_train, X_test, y_train, y_test = train_test_split(
+        df[X], df[y], test_size=test_size, shuffle=False
+    )
 
     # Scale the data using MinMaxScaler
     scaler = MinMaxScaler()
@@ -121,23 +119,21 @@ def forecast_number_users(df, test_size=0.2, lstm_units=64, lstm_epochs=50):
     X_test_scaled = scaler.transform(X_test)
 
     # Reshape the input data to be 3-dimensional for the LSTM model
-    X_train_reshaped = X_train_scaled.reshape(X_train_scaled.shape[0], 1,
-                                              X_train_scaled.shape[1])
-    X_test_reshaped = X_test_scaled.reshape(X_test_scaled.shape[0], 1,
-                                            X_test_scaled.shape[1])
+    X_train_reshaped = X_train_scaled.reshape(
+        X_train_scaled.shape[0], 1, X_train_scaled.shape[1]
+    )
+    X_test_reshaped = X_test_scaled.reshape(
+        X_test_scaled.shape[0], 1, X_test_scaled.shape[1]
+    )
 
     # Build the LSTM model
     model = Sequential()
     model.add(LSTM(lstm_units, input_shape=(1, X_train_scaled.shape[1])))
     model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
+    model.compile(loss="mean_squared_error", optimizer="adam")
 
     # Fit the model on the training set
-    model.fit(X_train_reshaped,
-              y_train,
-              epochs=lstm_epochs,
-              batch_size=1,
-              verbose=0)
+    model.fit(X_train_reshaped, y_train, epochs=lstm_epochs, batch_size=1, verbose=0)
 
     # Make predictions on the testing set
     predictions = model.predict(X_test_reshaped)
