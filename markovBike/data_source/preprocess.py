@@ -44,10 +44,37 @@ def preprocess_stations_data(
 
     # Print out information about the dataframe and features
     if verbose:
-        print(f"\n 📶 {Fore.CYAN}Columns {list(dataframe.columns)}{Style.RESET_ALL}")
-        print(f"\n 📶 {Fore.CYAN}Numericals {numerical_features}{Style.RESET_ALL}")
-        print(f"\n 📶 {Fore.CYAN}Categoricals {categorical_features}{Style.RESET_ALL}")
-        print(f"\n 📶 {Fore.CYAN}Booleans {boolean_features}{Style.RESET_ALL}")
+        print(
+            "\n 📶 "
+            + Fore.CYAN
+            + "Columns"
+            + str(list(dataframe.columns))
+            + Style.RESET_ALL
+        )
+
+        print(
+            "\n 📶 "
+            + Fore.CYAN
+            + "Numericals"
+            + str(list(numerical_features))
+            + Style.RESET_ALL
+        )
+
+        print(
+            "\n 📶 "
+            + Fore.CYAN
+            + "Categoricals"
+            + str(list(categorical_features))
+            + Style.RESET_ALL
+        )
+
+        print(
+            "\n 📶 "
+            + Fore.CYAN
+            + "Booleans"
+            + str(list(boolean_features))
+            + Style.RESET_ALL
+        )
 
     # Define the transformers for numerical, categorical, and boolean features
     numeric_transformer = Pipeline(
@@ -120,9 +147,10 @@ class CustomFeaturesAdder(BaseEstimator, TransformerMixin):
         A pandas DataFrame with added features.
     """
 
-    def __init__(self, add_age=True, add_sine_cosine=True):
+    def __init__(self, dataframe, add_age=True, add_sine_cosine=True):
         self.add_age = add_age
         self.add_sine_cosine = add_sine_cosine
+        self.dataframe = dataframe
 
     def fit(self, X, y=None):
         """
@@ -160,21 +188,7 @@ class CustomFeaturesAdder(BaseEstimator, TransformerMixin):
         # Create a pandas DataFrame from the input data
         df = pd.DataFrame(
             X,
-            columns=[
-                "tripduration",
-                "starttime",
-                "stoptime",
-                "start_station_latitude",
-                "start_station_longitude",
-                "end_station_latitude",
-                "end_station_longitude",
-                "bikeid",
-                "usertype",
-                "birth_year",
-                "gender",
-                "start_station_id",
-                "end_station_id",
-            ],
+            columns=list(self.dataframe.columns),
         )
 
         # Add user age if specified
@@ -224,25 +238,35 @@ def preprocess_trips_data(
 
     if verbose:
         print(
-            "\n 📶 Columns " + Fore.CYAN + str(list(dataframe.columns)) + Style.RESET_ALL
+            "\n 📶 "
+            + Fore.CYAN
+            + "Columns"
+            + str(list(dataframe.columns))
+            + Style.RESET_ALL
         )
 
         print(
-            "\n 📶 Numericals "
+            "\n 📶 "
             + Fore.CYAN
+            + "Numericals"
             + str(list(numerical_features))
             + Style.RESET_ALL
         )
 
         print(
-            "\n 📶 Categoricals "
+            "\n 📶 "
             + Fore.CYAN
+            + "Categoricals"
             + str(list(categorical_features))
             + Style.RESET_ALL
         )
 
         print(
-            "\n 📶 Booleans " + Fore.CYAN + str(list(boolean_features)) + Style.RESET_ALL
+            "\n 📶 "
+            + Fore.CYAN
+            + "Booleans"
+            + str(list(boolean_features))
+            + Style.RESET_ALL
         )
 
     # Create the preprocessing pipelines for the categorical, numerical and boolean columns
@@ -250,7 +274,7 @@ def preprocess_trips_data(
         steps=[("onehot", OneHotEncoder(sparse=False, drop="if_binary"))]
     )
     numerical_transformer = Pipeline(steps=[("scaler", StandardScaler())])
-    custom_features_adder = Pipeline(steps=[("adder", CustomFeaturesAdder())])
+    custom_features_adder = Pipeline(steps=[("adder", CustomFeaturesAdder(dataframe))])
 
     # Use the ColumnTransformer to apply the transformations to the appropriate columns
     preprocessor = ColumnTransformer(
@@ -268,13 +292,9 @@ def preprocess_trips_data(
         ]
     )
 
-    print(repr(dataframe.columns))
-    dataframe.columns = list(dataframe.columns)
-    print(repr(dataframe.columns))
-
     # Fit the pipeline to the training data
     pipeline.fit(dataframe)
-    print("2")
+
     X = pipeline.transform(dataframe)
 
     categorical_onehot_features = (
@@ -286,7 +306,17 @@ def preprocess_trips_data(
     transformed_columns = (
         list(numerical_features)
         + list(categorical_onehot_features)
-        + ["age", "starttime_sin", "starttime_cos"]
+        # + ["age", "starttime_sin", "starttime_cos"]
     )
+
+    if verbose:
+        print("\n 📶 " + Fore.CYAN + f"Array shaped {X.shape}" + Style.RESET_ALL)
+
+        print(
+            "\n 📶 "
+            + Fore.CYAN
+            + f"Columns names are {len(transformed_columns)}: {transformed_columns}"
+            + Style.RESET_ALL
+        )
 
     return X, transformed_columns

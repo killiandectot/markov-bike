@@ -8,6 +8,7 @@ import time
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
+from colorama import Style, Fore
 
 
 def calculate_daily_rides(
@@ -106,12 +107,24 @@ def get_daily_rides_with_weather(df, api_key):
 
 
 def forecast_number_users(
-    df, X=None, y=None, test_size=0.2, lstm_units=64, lstm_epochs=50
+    df,
+    X=None,
+    y=None,
+    test_size=0.2,
+    lstm_units=64,
+    lstm_epochs=50,
+    batch_size=16,
+    verbose=0,
 ):
     # Split into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
         df[X], df[y], test_size=test_size, shuffle=False
     )
+
+    print("\n 📶 " + Fore.CYAN + f"X Train shape is: {X_train.shape}" + Style.RESET_ALL)
+    print("\n 📶 " + Fore.CYAN + f"Y train shape is: {y_train.shape}" + Style.RESET_ALL)
+    print("\n 📶 " + Fore.CYAN + f"X Test shape is: {X_test.shape}" + Style.RESET_ALL)
+    print("\n 📶 " + Fore.CYAN + f"Y Test shape is: {y_test.shape}" + Style.RESET_ALL)
 
     # Scale the data using MinMaxScaler
     scaler = MinMaxScaler()
@@ -133,12 +146,18 @@ def forecast_number_users(
     model.compile(loss="mean_squared_error", optimizer="adam")
 
     # Fit the model on the training set
-    model.fit(X_train_reshaped, y_train, epochs=lstm_epochs, batch_size=1, verbose=0)
+    model.fit(
+        X_train_reshaped,
+        y_train,
+        epochs=lstm_epochs,
+        batch_size=batch_size,
+        verbose=verbose,
+    )
 
     # Make predictions on the testing set
     predictions = model.predict(X_test_reshaped)
 
     # Calculate the mean absolute error
-    mae = np.mean(np.abs(predictions - y_test))
+    mae = np.mean(np.abs(predictions.reshape(y_test.shape) - y_test))
 
     return model, mae
