@@ -307,9 +307,26 @@ class Manager:
     @staticmethod
     def transition_matrix_heatmaps(matrix):
         # Plot a heatmap of the probability matrix
-        fig, ax = plt.subplots(figsize=(10, 10))
+        fig, ax = plt.subplots(figsize=(20, 20))
 
-        sns.heatmap(matrix, cmap="coolwarm", ax=ax)
+        num_ticks = 10
+        # the index of the position of yticks
+        xticks = np.linspace(0, matrix.shape[0] - 1, num_ticks, dtype=np.int)
+        yticks = np.linspace(0, matrix.shape[1] - 1, num_ticks, dtype=np.int)
+
+        # the content of labels of these yticks
+        xticklabels = [str(idx) for idx in xticks]
+        yticklabels = [str(idx) for idx in yticks]
+
+        sns.heatmap(matrix,
+                    cmap="rocket",
+                    ax=ax,
+                    xticklabels=xticklabels,
+                    yticklabels=yticklabels,
+                    alpha=0.95)
+
+        ax.set_xticks(xticks)
+        ax.set_yticks(yticks)
 
         ax.set_title("Station Transition Probability Matrix")
         ax.set_xlabel("End Station ID")
