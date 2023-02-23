@@ -2,145 +2,186 @@ import numpy as np
 import pandas as pd
 
 
-def calculate_probability_matrix(dataframe):
-    # Get a list of all unique station IDs
-    station_ids = dataframe[["start_station_id", "end_station_id"]].stack().unique()
+def get_station_to_station_matrix(trips_raw, station_dict):
+    """
+    Computes the transition matrix of trips between bike-sharing stations.
 
-    # Create an empty matrix to store trip counts
-    trip_counts = np.zeros((len(station_ids), len(station_ids)))
+    Args:
+        trips_data (pandas.DataFrame): A DataFrame containing bike trips data with columns
+            "start_station_id" and "end_station_id".
 
-    # Loop over each row in the DataFrame and update the corresponding entry in the trip counts matrix
-    for _, row in dataframe.iterrows():
-        start_station_id = row["start_station_id"]
-        end_station_id = row["end_station_id"]
-        start_index = np.where(station_ids == start_station_id)[0][0]
-        end_index = np.where(station_ids == end_station_id)[0][0]
-        trip_counts[start_index, end_index] += 1
+    Returns:
+        numpy.ndarray: A square matrix where each row and column represents a unique station ID.
+            The (i, j) element of the matrix contains the probability of transitioning from station i to j.
+    """
 
-    # Calculate the total number of trips from each station
-    total_trips = trip_counts.sum(axis=1)
-
-    # Calculate the probability matrix
-    probability_matrix = trip_counts / total_trips[:, np.newaxis]
-
-    # Fill NaN values with zeros
-    probability_matrix = np.nan_to_num(probability_matrix)
-
-    # Convert to a pandas DataFrame and add row and column labels
-    probability_matrix = pd.DataFrame(
-        probability_matrix, index=station_ids, columns=station_ids
-    )
-
-    print("returned")
-
-    return probability_matrix
-
-
-def BSiBSj(trips_raw):
     # Create dictionary to map station ids to indices
     station_dict = {
-        id: i
-        for i, id in enumerate(
-            set(trips_raw["start_station_id"]).union(set(trips_raw["end_station_id"]))
+        station_id: i
+        for i, station_id in enumerate(
+            np.unique(trips_raw[["start_station_id", "end_station_id"]].values)
         )
     }
 
     # Get number of stations
-    N = len(station_dict)
+    num_stations = len(station_dict)
 
     # Initialize matrix with zeros
-    bsibsj = np.zeros((N, N))
+    station_to_station_matrix = np.zeros((num_stations, num_stations))
 
-    # Loop over rows in dataframe
-    for index, row in trips_raw.iterrows():
-        start_station = station_dict[row["start_station_id"]]
-        end_station = station_dict[row["end_station_id"]]
-
-        print(
-            f"Trip number {index} from station {start_station} to station {end_station}",
-            end="\r",
-        )
-
-        if start_station == end_station:
-            bsibsj[start_station][end_station] += 1
-        else:
-            pass
-
-    # Calculate probabilities
-    for i in range(N):
-        total = sum(bsibsj[i])
-        if total > 0:
-            bsibsj[i] /= total
-
-    return bsibsj
-
-
-def BSiBSj2(trips_raw):
-    # create dictionary mapping station ids to indices
-    station_dict = {
-        id: i
-        for i, id in enumerate(
-            np.unique(
-                np.concatenate(
-                    [
-                        trips_raw["start_station_id"].values,
-                        trips_raw["end_station_id"].values,
-                    ]
-                )
-            )
-        )
-    }
-
-    # initialize matrix with zeros
-    num_stations = len(station_dict)
-    bsibsj = np.zeros((num_stations, num_stations))
-
-    # populate matrix with probabilities
+    # Loop over rows in dataframe and count trips between stations
     for _, row in trips_raw.iterrows():
         start_station = station_dict[row["start_station_id"]]
         end_station = station_dict[row["end_station_id"]]
-        if start_station == end_station:
-            bsibsj[start_station][end_station] += 1
+        if start_station != end_station:
+            station_to_station_matrix[start_station][end_station] += 1
 
-    # normalize matrix along the diagonal
+    # Calculate probabilities
     for i in range(num_stations):
-        bsibsj[i][i] /= np.sum(bsibsj[i])
+        total_trips = sum(station_to_station_matrix[i])
+        if total_trips > 0:
+            station_to_station_matrix[i] /= total_trips
 
-    return bsibsj
+    return station_to_station_matrix
 
 
-def BSiTBj(trips_raw):
-    # Create dictionary to map station id to matrix index
-    station_dict = {
-        id: i for i, id in enumerate(np.unique(trips_raw["start_station_id"]))
-    }
+def get_station_to_trip_matrix(trips_raw, station_dict):
+    """
+    Generates a matrix representing the proportion of trips starting at each station.
+
+    Args:
+        trips_raw: Pandas DataFrame containing information about each bike trip.
+        station_dict: Dictionary mapping station IDs to matrix indices.
+
+    Returns:
+        A square numpy ndarray representing the proportion of trips starting at each station.
+    """
 
     # Initialize matrix with zeros
-    n = len(station_dict)
-    bsitbj = np.zeros((n, n))
+    num_stations = len(station_dict)
+    bsi_tbj = np.zeros((num_stations, num_stations))
 
     # Count number of trips starting at each station
     for _, row in trips_raw.iterrows():
         start_station = station_dict[row["start_station_id"]]
-        bsitbj[start_station][start_station] += 1
+        bsi_tbj[start_station][start_station] += 1
 
     # Calculate probability values
-    bsitbj = bsitbj / np.sum(bsitbj, axis=1, keepdims=True)
+    row_sums = np.sum(bsi_tbj, axis=1, keepdims=True)
+    nonzero_row_indices = np.nonzero(row_sums)[0]
+    bsi_tbj[nonzero_row_indices, :] /= row_sums[nonzero_row_indices, :]
 
-    return bsitbj
+    return bsi_tbj
 
 
-def TBiTBj(trips_raw):
+def get_trip_to_station_matrix(trips_raw, station_dict):
+    """
+    Computes the transition matrix between bike stations based on the number of trips between each station.
+
+    Args:
+    - trips_raw: a pandas DataFrame containing information about bike trips.
+
+    Returns:
+    - tbs_matrix: a numpy array representing the transition matrix between bike stations based on the number of trips
+                  between each station.
+    """
+    # Create dictionary to map station ids to indices
     station_dict = {
-        id: i for i, id in enumerate(trips_raw["start_station_id"].unique())
+        id: i
+        for i, id in enumerate(
+            np.unique(trips_raw[["start_station_id", "end_station_id"]].values)
+        )
     }
+
+    # Initialize matrix with zeros
     num_stations = len(station_dict)
-    tbitbj = np.zeros((num_stations, num_stations))
+    tbs_matrix = np.zeros((num_stations, num_stations))
+
+    # Count number of trips ending at each station
     for _, row in trips_raw.iterrows():
         start_station = station_dict[row["start_station_id"]]
         end_station = station_dict[row["end_station_id"]]
-        tbitbj[start_station][end_station] += 1
-    tb = np.sum(tbitbj, axis=1)
-    tbitbj /= tb[:, np.newaxis]
-    np.fill_diagonal(tbitbj, 0)
-    return tbitbj
+        tbs_matrix[end_station][start_station] += 1
+
+    # Calculate probability values, handling divide-by-zero error
+    row_sums = np.sum(tbs_matrix, axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1  # replace 0s with 1s to avoid division by zero
+    tbs_matrix /= row_sums
+
+    return tbs_matrix
+
+
+def full_transition_matrix(trips_raw):
+    """
+    This function takes in a pandas dataframe of trip data and calculates a full
+    transition matrix between all stations. The matrix is constructed by using
+    three submatrices: a matrix of trips from station i to station j, a matrix of
+    trips from station i to any other station, and a matrix of trips from any
+    station to station j. These submatrices are combined to form the full
+    transition matrix. The matrix is normalized such that the rows sum to 1.
+
+    Args:
+    - trips_raw (pandas dataframe): dataframe of trip data with the following
+      columns: ['start_station_id', 'end_station_id']. Each row represents a
+      single trip taken by a user.
+
+    Returns:
+    - full_transition_matrix (numpy array): a square matrix with dimensions
+      (n_stations, n_stations) where n_stations is the number of unique stations
+      in the trip data. The (i, j) entry in the matrix represents the probability
+      of transitioning from station i to station j.
+    """
+
+    # Create dictionary to map station ids to indices
+    station_dict = {
+        id: i
+        for i, id in enumerate(
+            np.unique(trips_raw[["start_station_id", "end_station_id"]].values)
+        )
+    }
+
+    print(f"The length of the dictionary is {len(station_dict)}")
+
+    # Get number of stations
+    n_stations = len(station_dict)
+
+    # Get submatrices
+    bsibsj = get_station_to_station_matrix(trips_raw, station_dict)
+    print(bsibsj.shape)
+    bsitbj = get_station_to_trip_matrix(trips_raw, station_dict)
+    print(bsitbj.shape)
+    tbitbj = get_trip_to_station_matrix(trips_raw, station_dict)
+    print(tbitbj.shape)
+
+    # Initialize full transition matrix with zeros
+    full_transition_matrix = np.zeros((n_stations, n_stations))
+
+    # Calculate full transition matrix
+    for i in range(n_stations):
+        for j in range(n_stations):
+            if i == j:
+                # If i and j are the same, the probability of transitioning from
+                # station i to station j is 0
+                full_transition_matrix[i][j] = 0
+            else:
+                # Otherwise, use the submatrices to calculate the probability of
+                # transitioning from station i to station j
+                bsit = bsitbj[i][j]
+                tbit = tbitbj[i][j]
+                bsib = bsibsj[i][j]
+                total_trips_from_i = bsit + bsib
+                if total_trips_from_i == 0:
+                    # If there are no trips from station i to any other station,
+                    # the probability of transitioning from station i to station j
+                    # is 0
+                    full_transition_matrix[i][j] = 0
+                else:
+                    # Otherwise, calculate the probability of transitioning from
+                    # station i to station j using the submatrices and normalize by
+                    # the total number of trips from station i
+                    prob_it = bsit / total_trips_from_i
+                    prob_ti = tbit / total_trips_from_i
+                    prob_ib = bsib / total_trips_from_i
+                    full_transition_matrix[i][j] = prob_it + prob_ti + prob_ib
+
+    return bsibsj, bsitbj, tbitbj, full_transition_matrix
