@@ -8,7 +8,10 @@ wheel>=0.29
 numpy
 pandas
 scikit-learn
-pandas-gbq
+#pandas-gbq
+seaborn
+statsmodels
+tensorflow
 
 # tests/linter
 black
@@ -28,3 +31,4 @@ six>=1.14
 joblib
 memoized-property
 termcolor
+colorama

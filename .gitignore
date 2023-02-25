@@ -86,3 +86,7 @@ env.bak/
 venv.bak/
 
 .python-version
+
+# Plots
+notebooks/plots
+notebooks/juani_forecast.ipynb
